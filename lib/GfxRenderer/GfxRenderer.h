@@ -3,6 +3,9 @@
 #include <EpdFontFamily.h>
 #include <HalDisplay.h>
 
+#include <algorithm>
+#include <cmath>
+
 namespace BidiUtils {
 // Paragraph base direction for the Unicode BiDi algorithm (UAX#9).
 // AUTO: scan text for first strong directional character (P2/P3 rules)
@@ -45,6 +48,22 @@ class GfxRenderer {
   };
 
  private:
+  float uiScale_ = 1.0f;
+  mutable bool uiScaleActive_ = false;
+  int sp(const int v) const { return static_cast<int>(lroundf(static_cast<float>(v) * uiScale_)); }
+  int lp(const int v) const { return static_cast<int>(lroundf(static_cast<float>(v) / uiScale_)); }
+  // Line widths never scale below one physical pixel.
+  int spw(const int v) const { return v <= 0 ? v : std::max(1, sp(v)); }
+  void spRect(int& x, int& y, int& w, int& h) const {
+    const int x1 = sp(x + w), y1 = sp(y + h);
+    x = sp(x);
+    y = sp(y);
+    w = x1 - x;
+    h = y1 - y;
+  }
+  void drawIconScaled(const uint8_t bitmap[], int x, int y, int size, int outSize) const;
+  void drawImageScaled(const uint8_t bitmap[], int x, int y, int width, int height, int outWidth, int outHeight) const;
+
   static constexpr size_t BW_BUFFER_CHUNK_SIZE = 8000;  // 8KB chunks to allow for non-contiguous memory
 
   HalDisplay& display;
@@ -294,9 +313,13 @@ class GfxRenderer {
   // Drawing
   // UI drawing clip in logical coordinates; independent of panel orientation.
   std::array<int, 4> getClipRect() const {
+    if (uiScaleActive_) {
+      return {lp(clipLeft_), lp(clipTop_), lp(clipRight_ - clipLeft_), lp(clipBottom_ - clipTop_)};
+    }
     return {clipLeft_, clipTop_, clipRight_ - clipLeft_, clipBottom_ - clipTop_};
   }
   void setClipRect(int x, int y, int width, int height) const {
+    if (uiScaleActive_) spRect(x, y, width, height);
     clipLeft_ = x;
     clipTop_ = y;
     clipRight_ = x + width;
@@ -322,6 +345,30 @@ class GfxRenderer {
                        bool roundBottomLeft, bool roundBottomRight, Color color) const;
   void drawImage(const uint8_t bitmap[], int x, int y, int width, int height) const;
   void drawIcon(const uint8_t bitmap[], int x, int y, int size) const;
+  // Board UI scale (BoardProfile::uiScale). While active, every public draw
+  // and measure call takes and returns logical coordinates, multiplied by the
+  // scale on the way to the panel; glyphs, icons and bitmaps are drawn at
+  // physical resolution. 1.0 (every board but the dense ones) is the identity.
+  float uiScale() const { return uiScale_; }
+  // Converts a rect in the caller's units to physical pixels (unchanged when
+  // no UI scale is active).
+  void physicalRect(int& x, int& y, int& width, int& height) const {
+    if (uiScaleActive_) spRect(x, y, width, height);
+  }
+  // While alive, every call takes and returns physical pixels. Scaled public
+  // calls use it so their implementation is not scaled again; callers use it
+  // for content that already is panel pixels: book images, XTC pages, sleep
+  // and BMP images.
+  struct PhysicalScope {
+    const GfxRenderer& renderer;
+    bool previous;
+    explicit PhysicalScope(const GfxRenderer& r) : renderer(r), previous(r.uiScaleActive_) { r.uiScaleActive_ = false; }
+    ~PhysicalScope() { renderer.uiScaleActive_ = previous; }
+  };
+  // A bitmap's size in the caller's units: its pixels are physical, so under
+  // UI scale it covers fewer logical units.
+  int bitmapWidth(const Bitmap& bitmap) const { return uiScaleActive_ ? lp(bitmap.getWidth()) : bitmap.getWidth(); }
+  int bitmapHeight(const Bitmap& bitmap) const { return uiScaleActive_ ? lp(bitmap.getHeight()) : bitmap.getHeight(); }
   bool drawBitmap(const Bitmap& bitmap, int x, int y, int maxWidth, int maxHeight, float cropX = 0, float cropY = 0,
                   bool whiteAsTransparent = false) const;
   bool drawBitmap1Bit(const Bitmap& bitmap, int x, int y, int maxWidth, int maxHeight) const;
