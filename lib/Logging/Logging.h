@@ -75,7 +75,15 @@ bool sanitizeLogHead();
 
 class MySerialImpl : public Print {
  public:
-  void begin(unsigned long baud) { logSerial.begin(baud); }
+  void begin(unsigned long baud) {
+    logSerial.begin(baud);
+    started = true;
+  }
+
+  // False until begin(). On the ESP32-S31 global constructors may log before the
+  // serial object itself is constructed (a null vtable fault), so logPrintf()
+  // skips the port there until then. Other chips keep writing as before.
+  inline static bool started = false;
 
   // Support boolean conversion for compatibility with code like:
   //   if (Serial) or while (!Serial)

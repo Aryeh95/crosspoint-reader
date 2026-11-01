@@ -69,7 +69,11 @@ void logPrintf(const char* level, const char* origin, const char* format, ...) {
   // Write even when `logSerial` reports disconnected: after a brief SOF-watchdog flap
   // (common at the 10 MHz low-power clock) HWCDC keeps `connected` false until its next
   // TX interrupt. write() queues without blocking in that state and re-arms that interrupt.
+#if CONFIG_IDF_TARGET_ESP32S31
+  if (MySerialImpl::started) logSerial.print(buf);
+#else
   logSerial.print(buf);
+#endif
 #endif
   addToLogRingBuffer(buf);
 }
