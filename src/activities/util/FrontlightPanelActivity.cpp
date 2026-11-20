@@ -55,8 +55,9 @@ uint8_t percentFromPermille(const int16_t permille) {
 }
 }  // namespace
 
-FrontlightPanelActivity::FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : Activity("FrontlightPanel", renderer, mappedInput), UiAppHost(renderer) {}
+FrontlightPanelActivity::FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                                                 const bool overReader)
+    : Activity("FrontlightPanel", renderer, mappedInput), UiAppHost(renderer), overReader(overReader) {}
 
 void FrontlightPanelActivity::onEnter() {
   Activity::onEnter();

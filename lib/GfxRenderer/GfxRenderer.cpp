@@ -771,7 +771,7 @@ static constexpr uint8_t kGrayUiLevels[16][3] = {
 };
 #endif
 
-bool GfxRenderer::beginGrayFrame() const {
+bool GfxRenderer::beginGrayFrame(const bool useBuiltInTable) const {
   if (grayFrameActive_ || !frameBuffer || _stripActive || renderMode != BW || !display.supportsGray16Image()) {
     return false;
   }
@@ -780,12 +780,13 @@ bool GfxRenderer::beginGrayFrame() const {
   if (!grayImage_) grayImage_ = static_cast<uint8_t*>(heap_caps_malloc(pixels / 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
   if (!grayInk_ || !grayImage_) return false;
   // Once: a panel without level tuning refuses and keeps its own table.
-  if (!grayLevelsApplied_) {
+  if (!useBuiltInTable && !grayLevelsApplied_) {
     grayLevelsApplied_ = true;
     display.setGray16Levels(kGrayUiLevels);
   }
   memset(grayInk_, GRAY_FOLLOWS_FB, pixels);
   grayFrameActive_ = true;
+  grayUseBuiltInTable_ = useBuiltInTable;
   return true;
 }
 
@@ -861,8 +862,11 @@ bool GfxRenderer::displayGrayFrame(const HalDisplay::RefreshMode refreshMode) co
       *out++ = static_cast<uint8_t>((shown(grayUnder(px, py)) << 4) | shown(grayUnder(px + 1, py)));
     }
   }
+  if (grayUseBuiltInTable_ && grayLevelsApplied_) display.setGray16Levels(nullptr);
   // FAST drives the pixels that changed; the cleanup modes drive every pixel.
-  return display.displayGray16Image(grayImage_, refreshMode == HalDisplay::FAST_REFRESH);
+  const bool displayed = display.displayGray16Image(grayImage_, refreshMode == HalDisplay::FAST_REFRESH);
+  if (grayUseBuiltInTable_ && grayLevelsApplied_) display.setGray16Levels(kGrayUiLevels);
+  return displayed;
 }
 
 bool GfxRenderer::displayGray16Bitmap(const Bitmap& bitmap, int x, int y, int maxWidth, int maxHeight,

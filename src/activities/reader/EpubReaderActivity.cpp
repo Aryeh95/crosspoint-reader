@@ -2842,8 +2842,9 @@ void EpubReaderActivity::renderOverlay() {
   if (!epub || !section || !toolbarUi) return;
 #if CROSSPOINT_GRAY_UI
   // The page under the chrome stays as the framebuffer has it; only what is
-  // drawn from here on has its levels recorded.
-  if (!overlayGrayFrame) overlayGrayFrame = renderer.beginGrayFrame();
+  // drawn from here on has its levels recorded. Keep the panel's built-in
+  // GC16 table so overlays over book ink clear cleanly without a 3-cycle flash.
+  if (!overlayGrayFrame) overlayGrayFrame = renderer.beginGrayFrame(/*useBuiltInTable=*/true);
 #endif
 
   ReaderToolbarUi::Model model;

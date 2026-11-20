@@ -57,6 +57,10 @@ class Activity {
   // that take one (see GfxRenderer::beginGrayFrame). Book pages and screens
   // that run their own grayscale passes over a full-screen image opt out.
   virtual bool wantsGrayFrame() const { return !isReaderActivity(); }
+  // Overlays painted directly over a built-in-table reader page stay on the
+  // panel's built-in GC16 table so they clear book ink cleanly without a
+  // multi-cycle blackout flash.
+  virtual bool usesBuiltInGrayTable() const { return false; }
   virtual bool handleHomeGesture() { return false; }
   virtual ScreenshotInfo getScreenshotInfo() const { return {}; }
 

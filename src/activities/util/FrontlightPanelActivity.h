@@ -28,6 +28,7 @@ class FrontlightPanelActivity final : public Activity, private UiAppHost {
   // reflected user intent in the first place.
   bool lightOnChanged = false;
   bool draggingSlider = false;
+  bool overReader = false;
   // The touch tile toggles SETTINGS.touchReaderControls between off and this
   // remembered mode, so a Swipe or Inverted Tap user gets their mode back
   // rather than the Tap default. Seeded from the setting in onEnter().
@@ -75,7 +76,8 @@ class FrontlightPanelActivity final : public Activity, private UiAppHost {
   bool sliderCleanPending = false;
 
  public:
-  explicit FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
+  explicit FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool overReader = false);
+  bool usesBuiltInGrayTable() const override { return overReader; }
   void onEnter() override;
   void onExit() override;
   void loop() override;

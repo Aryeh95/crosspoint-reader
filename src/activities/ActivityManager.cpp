@@ -89,7 +89,8 @@ void ActivityManager::renderTaskLoop() {
       const uint32_t renderingVisit = screenVisit;
 #if CROSSPOINT_GRAY_UI
       // Frames this render shows go out as 16-level images.
-      const bool grayFrame = currentActivity->wantsGrayFrame() && renderer.beginGrayFrame();
+      const bool grayFrame =
+          currentActivity->wantsGrayFrame() && renderer.beginGrayFrame(currentActivity->usesBuiltInGrayTable());
 #endif
       currentActivity->render(std::move(lock));
 #if CROSSPOINT_GRAY_UI
@@ -148,7 +149,8 @@ void ActivityManager::loop() {
     if (mappedInput.hasTouch() && currentActivity->name != "FrontlightPanel" &&
         (statusBarTap || mappedInput.wasLightPanelGesture())) {
       haptic_feedback::touchAction();
-      pushActivity(std::make_unique<FrontlightPanelActivity>(renderer, mappedInput));
+      pushActivity(
+          std::make_unique<FrontlightPanelActivity>(renderer, mappedInput, currentActivity->isReaderActivity()));
       return;
     }
 

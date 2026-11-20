@@ -145,7 +145,8 @@ class GfxRenderer {
   mutable uint8_t* grayInk_ = nullptr;
   mutable uint8_t* grayImage_ = nullptr;  // the packed 16-level image handed to the display
   mutable bool grayFrameActive_ = false;
-  mutable bool grayLevelsApplied_ = false;  // the panel has been given kGrayUiLevels
+  mutable bool grayLevelsApplied_ = false;     // the panel has been given kGrayUiLevels
+  mutable bool grayUseBuiltInTable_ = false;  // current gray frame uses panel's built-in GC16 table
   // Show the framebuffer and the recorded levels as one 16-level image.
   bool displayGrayFrame(HalDisplay::RefreshMode refreshMode) const;
   // Record the 8-bit gray copy stored after a thumbnail's 1-bit bitmap, if any.
@@ -505,8 +506,11 @@ class GfxRenderer {
   // then show the two together as a 16-level image instead of the B/W frame.
   // begin returns false when the panel takes no 16-level image or the buffers
   // cannot be allocated.
-  bool beginGrayFrame() const;
-  void endGrayFrame() const { grayFrameActive_ = false; }
+  bool beginGrayFrame(bool useBuiltInTable = false) const;
+  void endGrayFrame() const {
+    grayFrameActive_ = false;
+    grayUseBuiltInTable_ = false;
+  }
   bool isGrayFrame() const { return grayFrameActive_; }
   // Show a still picture in the panel's 16 levels, placed as drawBitmap()
   // places it, in one clean frame of the panel's own table (smooth levels; a
