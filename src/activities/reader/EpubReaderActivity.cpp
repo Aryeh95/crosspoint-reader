@@ -68,7 +68,8 @@ namespace {
 // this family runs the grayscale anti-aliasing pass, so chrome painted over a
 // fresh page needs the HALF ghost-cleanup and closing re-renders the page.
 bool xteinkClassPanel() {
-  return gpio.isXteinkDevice() || BoardConfig::isX4Pro() || BoardConfig::isX4Classic() || BoardConfig::isEegoA4();
+  return gpio.isXteinkDevice() || BoardConfig::isX4Pro() || BoardConfig::isX4Classic() || BoardConfig::isEegoA4() ||
+         BoardConfig::isMetalioEInk4Plus();
 }
 
 constexpr int PAGE_TURN_RATES[] = {1, 1, 3, 6, 12};

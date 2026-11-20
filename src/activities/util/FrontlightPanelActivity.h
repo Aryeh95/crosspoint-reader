@@ -69,6 +69,10 @@ class FrontlightPanelActivity final : public Activity, private UiAppHost {
   // not use this — it closes the panel and promotes the repaint underneath
   // instead (GfxRenderer::promoteNextRefresh).
   bool cleanRefreshPending = false;
+  // Slider drag releases request a HALF clean on non-gray panels to flip
+  // polarity without blocking; gray-UI frames already clear changed pixels
+  // cleanly on FAST_REFRESH without triggering a multi-cycle clear flash.
+  bool sliderCleanPending = false;
 
  public:
   explicit FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);

@@ -261,7 +261,7 @@ void FrontlightPanelActivity::loop() {
   if (draggingSlider) {
     if (!touch.snap.touchHeld) {
       draggingSlider = false;
-      cleanRefreshPending = true;
+      sliderCleanPending = true;
       requestUpdate();
     }
     return;
@@ -447,6 +447,8 @@ void FrontlightPanelActivity::render(RenderLock&&) {
   // flip the whole frame's polarity without the FULL waveform's blackout
   // flash. Any faint residue clears with the panel's dedicated refresh tile
   // or the next scheduled clean refresh.
-  renderer.displayBuffer(cleanRefreshPending ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);
+  const bool needsClean = cleanRefreshPending || (sliderCleanPending && !renderer.isGrayFrame());
+  renderer.displayBuffer(needsClean ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);
   cleanRefreshPending = false;
+  sliderCleanPending = false;
 }
