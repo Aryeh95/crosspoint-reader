@@ -2835,6 +2835,9 @@ void EpubReaderActivity::closeOverlayToPage() {
     return;
   }
   discardOverlayPage();
+  if (SETTINGS.screenInverted != 0 && BoardConfig::isMetalioEInk4Plus()) {
+    renderer.promoteNextRefresh(HalDisplay::HALF_REFRESH);
+  }
   requestUpdate();  // redraw the clean page
 }
 

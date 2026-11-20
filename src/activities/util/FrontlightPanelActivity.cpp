@@ -1,6 +1,7 @@
 #include "FrontlightPanelActivity.h"
 
 #include <BlePageTurner.h>
+#include <BoardConfig.h>
 #include <FreeInkUIIcon.h>
 #include <GfxRenderer.h>
 #include <HalFrontlight.h>
@@ -159,7 +160,7 @@ void FrontlightPanelActivity::runTile(const int idx) {
       // about to dismiss anyway: drop the panel first and let the repaint of
       // the screen underneath carry the clean waveform instead.
       renderer.promoteNextRefresh(HalDisplay::FULL_REFRESH);
-      close();
+      close(/*promoteNightClean=*/false);
       break;
     case 2:  // Cycle the reading orientation
       SETTINGS.orientation = static_cast<uint8_t>((SETTINGS.orientation + 1) % CrossPointSettings::ORIENTATION_COUNT);
@@ -228,7 +229,16 @@ void FrontlightPanelActivity::toggleLight() {
   requestUpdate();
 }
 
-void FrontlightPanelActivity::close() { finish(); }
+void FrontlightPanelActivity::close(const bool promoteNightClean) {
+  // Closing over a Night Mode reader page turns large white tiles/sliders
+  // back into the black background; promote the reader's repaint to
+  // HALF_REFRESH (every-pixel GC16, no blackout flash) so those regions
+  // match the surrounding black density.
+  if (promoteNightClean && overReader && SETTINGS.screenInverted != 0 && BoardConfig::isMetalioEInk4Plus()) {
+    renderer.promoteNextRefresh(HalDisplay::HALF_REFRESH);
+  }
+  finish();
+}
 
 bool FrontlightPanelActivity::handleHomeGesture() {
   close();

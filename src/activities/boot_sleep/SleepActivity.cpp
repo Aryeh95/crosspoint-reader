@@ -740,7 +740,10 @@ void SleepActivity::onEnter() {
 
   // Every mode below replaces the whole screen. One clean straight to the new
   // image leaves the old screen visible, so clean to white first (BLANK is that clean).
-  if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::BLANK) {
+  // Metalio E-Ink4-Plus skips this pre-clear: EpdiyDriver::deepSleep() already runs
+  // a 3-cycle clear + from-white redraw of the completed sleep image, so pre-clearing
+  // here only leaves the screen blank white while the cover loads from SD.
+  if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::BLANK && !BoardConfig::isMetalioEInk4Plus()) {
     renderer.clearScreen();
     renderer.displayBuffer(kSleepClean);
   }
