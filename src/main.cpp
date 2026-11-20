@@ -1098,6 +1098,41 @@ void loop() {
     activityManager.requestUpdate();
   }
 
+#if FREEINK_DEVICE_METALIO_EINK4_PLUS
+  {
+    static constexpr unsigned long UV_POLL_MS = 10000;
+    static unsigned long lastUvPollMs = 0;
+    static uint8_t lowBatterySamples = 0;
+    const unsigned long nowMs = millis();
+    if (lastUvPollMs == 0) {
+      lastUvPollMs = nowMs;
+    } else if (nowMs - lastUvPollMs >= UV_POLL_MS) {
+      lastUvPollMs = nowMs;
+      const BatteryMonitor uvBattery;
+      const BatteryMonitor::Status st = uvBattery.readStatus();
+      int16_t curMa = 0;
+      const bool curOk = uvBattery.readCurrentMilliampsChecked(curMa);
+      const bool dischargingOnly = st.externalPowerKnown && !st.externalPower &&
+                                   (!st.chargingKnown || !st.charging) && (!curOk || curMa <= 5);
+      const bool undervoltage = st.millivoltsKnown && st.millivolts >= 2500 && st.millivolts <= 3100;
+      const bool emptySoc = st.percentageKnown && st.percentage == 0;
+      if (dischargingOnly && (undervoltage || emptySoc)) {
+        if (++lowBatterySamples >= 2) {
+          LOG_ERR("BAT", "Sustained low battery (%u mV, %u%%, %d mA); cutting BATFET and sleeping",
+                  st.millivolts, st.percentage, static_cast<int>(curMa));
+          powerManager.requestBatteryCutOffOnSleep();
+          enterDeepSleep();
+          return;
+        }
+        LOG_DBG("BAT", "Low battery sample 1/2 (%u mV, %u%%, %d mA)",
+                st.millivolts, st.percentage, static_cast<int>(curMa));
+      } else {
+        lowBatterySamples = 0;
+      }
+    }
+  }
+#endif
+
   const unsigned long activityStartTime = millis();
   activityManager.loop();
   const unsigned long activityDuration = millis() - activityStartTime;

@@ -19,6 +19,9 @@ class HalPowerManager {
 
   mutable int _batteryCachedPercent = 0;         // Last read battery percentage (0-100)
   mutable unsigned long _batteryLastPollMs = 0;  // Timestamp of last battery read in milliseconds
+#if FREEINK_DEVICE_METALIO_EINK4_PLUS
+  mutable bool _cutOffBatteryOnSleep = false;
+#endif
 
   enum LockMode { None, NormalSpeed };
   LockMode currentLockMode = None;
@@ -51,6 +54,9 @@ class HalPowerManager {
   // awake at the low-power clock until the power key. setup() calls it again
   // straight away after a wake that was not the power key.
   [[noreturn]] void sleepOnExpanderKey() const;
+
+  // One-shot CX25601N BATFET ship-mode request consumed by the next startDeepSleep().
+  void requestBatteryCutOffOnSleep();
 #endif
 
 #if FREEINK_DEVICE_PICCO

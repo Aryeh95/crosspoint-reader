@@ -25,6 +25,10 @@
 
 HalPowerManager powerManager;  // Singleton instance
 
+#if FREEINK_DEVICE_METALIO_EINK4_PLUS
+void HalPowerManager::requestBatteryCutOffOnSleep() { _cutOffBatteryOnSleep = true; }
+#endif
+
 // GPIO13 controls the X4 battery latch and the X3 SD power rail on the C3
 // Xteink boards. Other boards use it for unrelated signals, including the
 // X4 Pro display chip select.
@@ -181,6 +185,14 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio, const bool wakeOnHeldButton)
   // respond: try once more, then fall back to a key-wake deep sleep. The light
   // goes off first because that fallback can end up staying awake.
   Frontlight.setOn(false);
+  if (_cutOffBatteryOnSleep) {
+    _cutOffBatteryOnSleep = false;
+    LOG_ERR("PWR", "Sustained low battery/SoC; entering CX25601N ship mode before power-off");
+    if (!BatteryMonitor::enterShipMode()) {
+      LOG_ERR("PWR", "CX25601N ship-mode write failed");
+    }
+    delay(50);
+  }
   freeink::metalioplus::powerOff();
   freeink::metalioplus::powerOff();
   sleepOnExpanderKey();
